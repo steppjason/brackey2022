@@ -2,44 +2,62 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
+
+public enum GameState { MENU, BATTLE, GAME, DEAD, CREDITS, PAUSE }
 
 public class GameController : MonoBehaviour
 {
-    const int CREDITS = 11;
+	const int CREDITS = 11;
+
+	//private GameController _gameController;
+	[SerializeField] private PlayerController _playerController;
+	[SerializeField] private DialogueController _dialogueController;
+	[SerializeField] private BattleController _battleController;
+
+	private GameObject _player;
+
+	[SerializeField] private Camera _mainCamera;
+
+	[SerializeField] public TMP_Text DebugGameState;
+	[SerializeField] public TMP_Text DebugMenuSelection;
+
+	public GameState State {get;set;}
+    public int LevelIndex {get; set;}
+
+    private Fader fader;
+    private GameObject _playerStart;
+	private bool _playerWin;
+
 
     // public GameObject startScreen;
     // public GameObject gameOverScreen;
     // public GameObject creditsScreen;
-    public GameObject _player;
+	// public AudioSource startSound;
+	// public AudioSource levelWarpSound;
+	// public AudioSource winSound;
+	// public AudioSource deathSound;
 
-    // public AudioSource startSound;
-    // public AudioSource levelWarpSound;
-    // public AudioSource winSound;
-    // public AudioSource deathSound;
-
-    public GameState State {get;set;}
-    public int LevelIndex {get; set;}
-
-    private Fader fader;
-    // private GameOverText gametext;
-
-    private GameObject _playerStart;
-
-    private PlayerController _playerController;
-    
-
-    private bool _playerWin;
 
     private void Awake() {
         this.LevelIndex = 1;
         fader = FindObjectOfType<Fader>();
-        // gametext = FindObjectOfType<GameOverText>();
-    }
+		// gametext = FindObjectOfType<GameOverText>();
+		_mainCamera.enabled = true;
+
+	}
 
     void Start()
     {
-        _playerController = _player.GetComponent<PlayerController>();
+        
+//		_dialogueController = FindObjectOfType<DialogueController>();
+//		_playerController = FindObjectOfType<PlayerController>();
+//		_battleController = FindObjectOfType<BattleController>();
+		
 		StartCoroutine(WaitForFade());
+
+		State = GameState.GAME;
+		_battleController.battleCanvas.enabled = false;
 	}
 
 	IEnumerator WaitForFade(){
@@ -51,22 +69,34 @@ public class GameController : MonoBehaviour
 		yield return fader.FadeOut(3f);
 	}
 
+	private void DebugUI(){
+		DebugGameState.text = "GameState: " + State.ToString();
+		DebugMenuSelection.text = "MenuSelection: " + _battleController._menuSelection;
+	}
+
     void Update()
     {
-       
-        // if(State == GameState.StartScreen){
+		DebugUI();
 
-        //     if(Input.GetKeyDown("return")){
-        //         startSound.Play();
-        //         StartCoroutine(SwitchScene(LevelIndex, GameState.Game));
-        //     }
+	
+		if(Input.GetKeyDown(KeyCode.KeypadEnter)){
+			UpdateGameState(State);
+		}
+			
 
-        //     if(Input.GetKeyDown("escape")){
-        //         QuitGame();
-        //     }
-        // }
-        
-        if(State == GameState.Game){
+		// if(State == GameState.StartScreen){
+
+		//     if(Input.GetKeyDown("return")){
+		//         startSound.Play();
+		//         StartCoroutine(SwitchScene(LevelIndex, GameState.Game));
+		//     }
+
+		//     if(Input.GetKeyDown("escape")){
+		//         QuitGame();
+		//     }
+		// }
+
+		if(State == GameState.GAME){
             
             // if(CheckForWin()){
             //     UpdateGameState(GameState.Win);
@@ -134,27 +164,29 @@ public class GameController : MonoBehaviour
 
     public void UpdateGameState(GameState state){
 
-		ResetGame();
+		switch(state){
+			case GameState.MENU:
+				state = GameState.GAME;
+				break;
+			case GameState.GAME:
+				state = GameState.BATTLE;
+				break;
+			case GameState.BATTLE:
+				state = GameState.DEAD;
+				break;
+			case GameState.DEAD:
+				state = GameState.CREDITS;
+				break;
+			case GameState.CREDITS:
+				state = GameState.MENU;
+				break;
+			default:
+				state = GameState.GAME;
+				break;
+		}
 
-		// if(state == GameState.StartScreen)
-		//     startScreen.SetActive(true);
-
-			// else if(state == GameState.Dead){
-			//     gameOverScreen.SetActive(true);
-			//     // StartCoroutine(gametext.FadeIn(2f));
-			// }
-
-			// else if(state == GameState.Credits)
-			//     creditsScreen.SetActive(true);
-
-		//else 
-		if(state == GameState.Game || state == GameState.Win){
-            _player.SetActive(true);
-            
-        }
-
-        State = state;       
-    }
+        State = state;
+	}
 
     public void ResetGame(){
         // startScreen.SetActive(false);
@@ -166,7 +198,7 @@ public class GameController : MonoBehaviour
         
         _player.transform.position = _playerStart.transform.position;
         
-        UpdateGameState(GameState.Game);
+        UpdateGameState(GameState.GAME);
     }
 
     IEnumerator SwitchScene(int scene, GameState gameState){
@@ -190,15 +222,6 @@ public class GameController : MonoBehaviour
         ResetLevel();
         // yield return fader.FadeOut(1f);
     }
-}
-
-public enum GameState{
-    StartScreen,
-    Menu,
-    Game,
-    Win,
-    Credits,
-    Dead
 }
 
 

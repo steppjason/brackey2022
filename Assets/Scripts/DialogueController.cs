@@ -7,7 +7,10 @@ using TMPro;
 public class DialogueController : MonoBehaviour
 {
 
-	[SerializeField] private PlayerController _player;
+	private GameController _gameController;
+	private PlayerController _playerController;
+	//private DialogueController _dialogueController;
+	private BattleController _battleController;
 
 	private Queue<string> _lines;
 	private bool _isActive;
@@ -23,13 +26,23 @@ public class DialogueController : MonoBehaviour
 
 	[SerializeField] public Animator animator;
 
-	// Start is called before the first frame update
+	
+	private void Awake() {
+		
+	}
+	
 	void Start()
     {
 		_lines = new Queue<string>();
+
+		//_dialogueController = FindObjectOfType<DialogueController>();
+		_gameController = FindObjectOfType<GameController>();
+		_playerController = FindObjectOfType<PlayerController>();
+		_battleController = FindObjectOfType<BattleController>();
 	}
 
 	private void Update() {
+
 		if(_isActive){
 			if(nextLine && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
 				DisplayNextSentence();
@@ -37,13 +50,15 @@ public class DialogueController : MonoBehaviour
 				_textSpeed = 0.0001f;
 			}
 		}
+
 	}
 
 
 	public void BeginDialogue(Dialogue dialogue){
 
-		_player.action = false;
-		_player.canMove = false;
+		_gameController.State = GameState.PAUSE;
+		
+
 		_isActive = true;
 
 		nameText.text = dialogue.name;
@@ -69,8 +84,6 @@ public class DialogueController : MonoBehaviour
 		}
 
 		string line = _lines.Dequeue();
-		Debug.Log(line);
-		Debug.Log(_lines);
 
 		StopAllCoroutines();
 		StartCoroutine(DisplayLine(line));
@@ -83,7 +96,7 @@ public class DialogueController : MonoBehaviour
 
 	IEnumerator WaitForBoxExit(float seconds){
 		yield return new WaitForSeconds(seconds);
-		_player.action = true;
+		_playerController.action = true;
 	}
 
 	IEnumerator DisplayLine(string line){
@@ -98,9 +111,9 @@ public class DialogueController : MonoBehaviour
 
 	void EndDialogue(){
 		_isActive = false;
-		_player.canMove = true;
 		animator.SetBool("isShowing", false);
 		StartCoroutine(WaitForBoxExit(0.75f));
+		_gameController.State = GameState.GAME;
 	}
 
 }
