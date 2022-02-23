@@ -26,42 +26,21 @@ public class GameController : MonoBehaviour
 	[SerializeField] public TMP_Text DebugEnemyHP;
 
 	public GameState State {get;set;}
-    public int LevelIndex {get; set;}
 
-    private Fader fader;
+    [SerializeField] public Fader _fader;
     private GameObject _playerStart;
 
-
-    // public GameObject startScreen;
-    // public GameObject gameOverScreen;
-    // public GameObject creditsScreen;
-	// public AudioSource startSound;
-	// public AudioSource levelWarpSound;
-	// public AudioSource winSound;
-	// public AudioSource deathSound;
-
-
     private void Awake() {
-        this.LevelIndex = 1;
-        fader = FindObjectOfType<Fader>();
-		// gametext = FindObjectOfType<GameOverText>();
 		_mainCamera.enabled = true;
-
 	}
 
     void Start()
     {
-        
-//		_dialogueController = FindObjectOfType<DialogueController>();
-//		_playerController = FindObjectOfType<PlayerController>();
-//		_battleController = FindObjectOfType<BattleController>();
-		
 		StartCoroutine(WaitForFade());
 
-		State = GameState.GAME;
+		State = GameState.PAUSE;
 		_battleController.battleCanvas.enabled = false;
 
-		//_playerController.OnBattle += OnBattle;
 		_battleController.OnBattleEnter += OnBattleEnter;
 		_battleController.OnBattleExit += OnBattleExit;
 
@@ -69,44 +48,7 @@ public class GameController : MonoBehaviour
 		_dialogueController.OnDialogueExit += OnDialogueExit;
 	}
 
-	public void OnBattleEnter(){
-		_playerController.canMove = false;
-		State = GameState.BATTLE;
-	}
 
-	public void OnBattleExit(){
-		_playerController.canMove = true;
-		State = GameState.GAME;
-	}
-
-	public void OnDialogueEnter(){
-		_playerController.canMove = false;
-		State = GameState.PAUSE;
-	}
-
-	public void OnDialogueExit(){
-		_playerController.canMove = true;
-		State = GameState.GAME;
-	}
-
-	IEnumerator WaitForFade(){
-		yield return new WaitForSeconds(3);
-		StartCoroutine(StartFade());
-	}
-
-	IEnumerator StartFade(){
-		yield return fader.FadeOut(3f);
-	}
-
-	private void DebugUI(){
-		DebugGameState.text = "GameState: " + State.ToString();
-		DebugAction.text = "Action: " + _playerController.action;
-		DebugMenuSelection.text = "MenuSelection: " + _battleController._menuSelection;
-
-		DebugBattleState.text = "BATTLE STATE: " + _battleController.State.ToString();
-//		DebugEnemyHP.text = "ENEMY HP: " + _battleController.battleEnemy.Enemy.HP;		
-		
-	}
 
     void Update()
     {
@@ -189,6 +131,16 @@ public class GameController : MonoBehaviour
     //     return false;
     // }
 
+	private void DebugUI(){
+		DebugGameState.text = "GameState: " + State.ToString();
+		DebugAction.text = "Action: " + _playerController.action;
+		DebugMenuSelection.text = "MenuSelection: " + _battleController._menuSelection;
+
+		DebugBattleState.text = "BATTLE STATE: " + _battleController.State.ToString();
+		//DebugEnemyHP.text = "ENEMY HP: " + _battleController.battleEnemy.Enemy.HP;		
+		
+	}
+
     public void QuitGame()
     {
         #if UNITY_EDITOR
@@ -226,40 +178,57 @@ public class GameController : MonoBehaviour
         State = state;
 	}
 
-    public void ResetGame(){
-        // startScreen.SetActive(false);
-        // gameOverScreen.SetActive(false);
+
+
+    IEnumerator SwitchScene(int scene){
+		State = GameState.PAUSE;
+		yield return _fader.FadeIn(1f);
+		yield return SceneManager.LoadSceneAsync(scene);
+        State = GameState.PAUSE;
+		_playerStart = GameObject.Find("PLAYER_START");
+		_playerController.transform.position = _playerStart.transform.position;
+		yield return _fader.FadeOut(1f);
     }
 
-    public void ResetLevel(){
-        //_player.GetComponent<PlayerController>().Reset();
-        
-        _player.transform.position = _playerStart.transform.position;
-        
-        UpdateGameState(GameState.GAME);
-    }
+	public void SwitchLevel(int levelNumber){
+		StartCoroutine(SwitchScene(levelNumber));
+	}
 
-    IEnumerator SwitchScene(int scene, GameState gameState){
-        // yield return fader.FadeIn(1f);
-        yield return SceneManager.LoadSceneAsync(scene);
-        UpdateGameState(gameState);
-        _playerStart = GameObject.Find("Player_1_Start");
-        ResetLevel();
-        // yield return fader.FadeOut(1f);
-    }
 
-    IEnumerator NextLevel(int scene, GameState gameState){
-       // _playerWin = false;
-        
-        yield return new WaitForSeconds(1f);
-        //levelWarpSound.Play();
-        // yield return fader.FadeIn(1f);
-        yield return SceneManager.LoadSceneAsync(scene);
-        UpdateGameState(gameState);
-        _playerStart = GameObject.Find("Player_1_Start");
-        ResetLevel();
-        // yield return fader.FadeOut(1f);
-    }
+	IEnumerator WaitForFade(){
+		yield return new WaitForSeconds(3);
+		StartCoroutine(StartFade());
+	}
+
+	IEnumerator StartFade(){
+		yield return _fader.FadeOut(2f);
+	}
+
+
+
+
+
+	public void OnBattleEnter(){
+		_playerController.canMove = false;
+		State = GameState.BATTLE;
+	}
+
+	public void OnBattleExit(){
+		_playerController.canMove = true;
+		State = GameState.GAME;
+	}
+
+	public void OnDialogueEnter(){
+		_playerController.canMove = false;
+		State = GameState.PAUSE;
+	}
+
+	public void OnDialogueExit(){
+		_playerController.canMove = true;
+		State = GameState.GAME;
+	}
+
+
 }
 
 

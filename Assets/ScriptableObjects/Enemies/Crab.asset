@@ -18,7 +18,7 @@ MonoBehaviour:
   attackText: GIANT CRAB swipes the player!
   healText: GIANT CRAB is nourished!
   deathText: GIANT CRAB was slain!
-  enemySprite: {fileID: 21300000, guid: 503f11ab4a42acd42acb98fed5ae6250, type: 3}
+  enemySprite: {fileID: 21300000, guid: e018b2d6acf8b704c8cd0ce09e8eff06, type: 3}
   maxHP: 20
   attack: 1
   defense: 10

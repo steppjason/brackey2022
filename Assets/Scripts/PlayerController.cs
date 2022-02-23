@@ -8,10 +8,11 @@ public class PlayerController : MonoBehaviour
 
 	//[SerializeField] private GameController _gameController; 
 	[SerializeField] private AudioController _audioController;
-	
+
 	private GameObject _collider;
 	private Vector2 _input;
-	private Animator _animator;
+	[SerializeField] private Animator _animatorActionBubble;
+	[SerializeField] private Animator _animatorPlayer;
 
 	//public event Action OnDialogue;
 	//public event Action OnBattle;
@@ -20,7 +21,9 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] public Camera _camera;
     [SerializeField] public float _moveSpeed = 5;
 	[SerializeField] public GameObject _actionIcon;
-	
+
+	private Vector3 direction;
+
 	public bool action = false;
 	public bool canMove = true;
 
@@ -33,7 +36,7 @@ public class PlayerController : MonoBehaviour
 	public int Defense { get; set; }
 
 	private void Awake() {
-		_animator = GetComponent<Animator>();
+		//_animatorActionBubble = GetComponent<Animator>();
 	}
 
 
@@ -78,18 +81,42 @@ public class PlayerController : MonoBehaviour
 			_input.x = Input.GetAxisRaw("Horizontal");
 			_input.y = Input.GetAxisRaw("Vertical");
 
-			transform.position = transform.position +
-						new Vector3(_input.x, _input.y, 0).normalized * _moveSpeed * Time.deltaTime;
+			direction = new Vector3(_input.x, _input.y, 0).normalized;
+			transform.position = transform.position + direction * _moveSpeed * Time.deltaTime;
+
+			_animatorPlayer.SetInteger("Direction", GetDirection());
 		}
 
+	}
+
+	private int GetDirection(){
+		if(direction.y == -1){
+            return 0;
+        } else if(direction.y == 1){
+            return 2;
+        } else if(direction.x == -1){
+            return 3;
+        } else if(direction.x == 1){
+            return 1;
+		} else if(direction.y < 0 && direction.x < 0){
+            return 3;
+        } else if(direction.y > 0 && direction.x < 0){
+            return 3;
+        } else if(direction.y > 0 && direction.x > 0){
+            return 1;
+        } else if(direction.y < 0 && direction.x > 0){
+            return 1;
+        } else {
+            return -1;
+        }
 	}
 
 
 	private void OnTriggerStay2D(Collider2D other) {
 
-		if(!_collider.GetComponent<BattleTrigger>()){
+		if(_collider.GetComponent<DialogueTrigger>()){
 			_actionIcon.SetActive(true);
-			_animator.SetBool("isShowing", true);
+			_animatorActionBubble.SetBool("isShowing", true);
 		}
 
 	}
@@ -100,7 +127,7 @@ public class PlayerController : MonoBehaviour
 	}
 
 	private void OnTriggerExit2D(Collider2D other) {
-		_animator.SetBool("isShowing", false);
+		_animatorActionBubble.SetBool("isShowing", false);
 		action = false;
 		_collider = null;
 	}

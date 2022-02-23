@@ -404,9 +404,9 @@ public class BattleController : MonoBehaviour
 			animatorPlayerNumbers.SetBool("isHeal", true);
 			animatorPlayer.SetBool("isHeal", true);
 		} else if (source == 3){
-			_audioController.Play("Hit");
+			_audioController.Play("Heal");
 			animatorEnemyNumbers.SetBool("isHeal", true);
-			//animatorEnemy.SetBool("isHeal", true);
+			animatorEnemy.SetBool("isHeal", true);
 		} else if (source == 4){
 			if(crit){
 				_audioController.Play("Crit");
