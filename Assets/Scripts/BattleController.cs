@@ -1,25 +1,27 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public enum BattleState{ START, PLAYER, ENEMY, WON, LOSE, MESSAGE }
+public enum BattleState{ START, PLAYER, ENEMY, WON, LOSE, MESSAGE, END }
 
 public class BattleController : MonoBehaviour
 {
 
-	const float TEXTSPEED = 0.05f;
+	const float TEXTSPEED = 0.005f;
 
-	private GameController _gameController;
-	private PlayerController _playerController;
-	private DialogueController _dialogueController;
-	//private BattleController _battleController;
+	public event Action OnBattleEnter;
+	public event Action OnBattleExit;
 
-	[SerializeField] private BattleEnemy battleEnemy;
+	//[SerializeField] private GameController _gameController;
+	[SerializeField] private PlayerController _playerController;
+
+	[SerializeField] public BattleEnemy battleEnemy;
 	[SerializeField] private Image _menuSelectionIcon;
 
-	[Header("User Interface")]
+	[Header("INTERFACE")]
 	[SerializeField] public Canvas battleCanvas;
 	[SerializeField] private TMP_Text _battleMessageText;
 
@@ -29,11 +31,18 @@ public class BattleController : MonoBehaviour
 	[SerializeField] private TMP_Text playerNumberText;
 	[SerializeField] private TMP_Text enemyNumberText;
 
+	[Header("ANIMATORS")]
 	[SerializeField] private Animator animator;
 	[SerializeField] private Animator animatorPlayerNumbers;
 	[SerializeField] private Animator animatorEnemyNumbers;
+	[SerializeField] private Animator animatorEnemy;
+	[SerializeField] private Animator animatorPlayer;
 
-	[Header("Debug Fields")]
+	[Header("AUDIO")]
+	public AudioController _audioController;
+
+
+	[Header("DEBUG")]
 	[SerializeField] private TMP_Text _debugBattleState;
 	[SerializeField] private TMP_Text _debugEnemyHP;
 
@@ -52,53 +61,53 @@ public class BattleController : MonoBehaviour
 
 	void Start()
     {
-		_dialogueController = FindObjectOfType<DialogueController>();
-		_gameController = FindObjectOfType<GameController>();
-		_playerController = FindObjectOfType<PlayerController>();
+		// _gameController = FindObjectOfType<GameController>();
+		// _playerController = FindObjectOfType<PlayerController>();
+
 	}
+
 
 	private void Update() {
 
-		if(Input.GetKeyDown(KeyCode.Backspace)){
-			SwitchBattleState(State);
-		}
-
-		if(_gameController.State == GameState.BATTLE){
+		//if(_gameController.State == GameState.BATTLE){
+		if(State != BattleState.END){
 			UserInput();
-			DebugUI();
 			UpdatePlayerText();
 		}
 
 		if(_isGameOver){
 			if(_finishedBattleMessage && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
+				_audioController.Play("Menu Select");
 				animator.SetBool("isShowing", false);
 				StartCoroutine(WaitForBoxExit(0.75f));
-				ExitBattle();
+				StartCoroutine(ExitBattle());
 			}
 		}
 
 	}
 
-	public void ExitBattle(){
-
+	IEnumerator ExitBattle(){
+		yield return new WaitForSeconds(2f);
 		if(_playerController.HP <= 0){
 			Debug.Log("Player dies here");
 			// Do something? Send to next day?
 		}
-
-		SwitchBattleState(BattleState.START);
+		//_gameController.State = GameState.GAME;
+		State = BattleState.END;
+		_isGameOver = false;
 		battleCanvas.enabled = false;
-		_gameController.State = GameState.GAME;
+		OnBattleExit();
 	}
 
 	
 	public void BeginBattle(Enemy encounter){
+		OnBattleEnter();
+		animatorEnemy.SetBool("isDeath", false);
 		SwitchBattleState(BattleState.START);
 		_battleEnemy = encounter;
 		battleCanvas.enabled = true;
 		_finishedBattleMessage = false;
 		_isGameOver = false;
-		_gameController.State = GameState.BATTLE;
 		_battleStart = true;
 		StartCoroutine(SetupBattle());
 	}
@@ -106,13 +115,13 @@ public class BattleController : MonoBehaviour
 	public void UserInput(){
 
 		if(State == BattleState.ENEMY){
-			
-			if(Random.Range(1,100) < 20){
-				EnemyHeal();
-			} else {
-				EnemyAttack();
-			}
+			StartCoroutine(EnemyTurn());
+		}
 
+		if(State == BattleState.PLAYER){
+			_menuSelectionIcon.enabled = true;
+		} else {
+			_menuSelectionIcon.enabled = false;
 		}
 
 		if(State == BattleState.PLAYER){
@@ -121,7 +130,7 @@ public class BattleController : MonoBehaviour
 				
 				if(_menuSelection < 3 ){
 					_menuSelection++;
-	
+					_audioController.Play("Menu Move");
 					_menuSelectionIcon.rectTransform.anchoredPosition = 
 							new Vector2(_menuSelectionIcon.rectTransform.anchoredPosition.x, 38 - (25 * _menuSelection));
 				}
@@ -131,25 +140,29 @@ public class BattleController : MonoBehaviour
 				
 				if(_menuSelection > 0){
 					_menuSelection--;
-	
+					_audioController.Play("Menu Move");
 					_menuSelectionIcon.rectTransform.anchoredPosition = 
 							new Vector2(_menuSelectionIcon.rectTransform.anchoredPosition.x, 38 - (25 * _menuSelection));
 				}
 			}
 	
 			if(Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)){
+				_audioController.Play("Menu Select");
 				DoPlayerAction(_menuSelection);
 			}
 
 		}
 
 		if(State == BattleState.MESSAGE){
+			DebugUI();
 			if(!_isGameOver && _finishedBattleMessage && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
+				_audioController.Play("Menu Select");
 				animator.SetBool("isShowing", false);
 				StartCoroutine(WaitForBoxExit(0.75f));
 				
 				if(battleEnemy.Enemy.HP <= 0){
 					_isGameOver = true;
+					animatorEnemy.SetBool("isDeath", true);
 					StartCoroutine(ShowBattleMessage(battleEnemy.Enemy.EnemySO.DeathText));
 					return;
 				}
@@ -160,14 +173,8 @@ public class BattleController : MonoBehaviour
 					return;
 				}
 
-				SetTurn();
+				StartCoroutine(SetTurn());
 				ResetNumberAnimations();
-
-				// if(_playerController.HP <= 0)
-				// 	State = BattleState.LOSE;
-					
-				// if(battleEnemy.Enemy.HP <= 0)
-				// 	State = BattleState.WON;
 
 			} else if(Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)){
 				_textSpeed = 0.0001f;
@@ -178,8 +185,8 @@ public class BattleController : MonoBehaviour
 	}
 
 
-
-	private void SetTurn(){
+	IEnumerator SetTurn(){
+		yield return new WaitForSeconds(0.5f);
 		if(_battleStart){
 
 			_battleStart = false;
@@ -211,6 +218,15 @@ public class BattleController : MonoBehaviour
 		animatorEnemyNumbers.SetBool("isHeal", false);
 		animatorEnemyNumbers.SetBool("isDamage", false);
 		animatorEnemyNumbers.SetBool("isCrit", false);
+
+		animatorEnemy.SetBool("isCrit", false);
+		animatorEnemy.SetBool("isHit", false);
+		animatorEnemy.SetBool("isHeal", false);
+
+		animatorPlayer.SetBool("isCrit", false);
+		animatorPlayer.SetBool("isHit", false);
+		animatorPlayer.SetBool("isHeal", false);
+		animatorPlayer.SetBool("isShield", false);
 	}
 
 	private void DoPlayerAction(int action){
@@ -219,16 +235,16 @@ public class BattleController : MonoBehaviour
 
 		switch(action){
 			case 0:
-				ActionWake();
+				StartCoroutine(ActionWake());
 				break;
 			case 1:
-				ActionPsychosis();
+				StartCoroutine(ActionPsychosis());
 				break;
 			case 2:
-				ActionSleep();
+				StartCoroutine(ActionSleep());
 				break;
 			case 3:
-				ActionDream();
+				StartCoroutine(ActionDream());
 				break;
 		}
 
@@ -241,62 +257,72 @@ public class BattleController : MonoBehaviour
 
 	// =======================================================================================================
 
-	private void ActionWake(){
+	IEnumerator ActionWake(){
 
 		bool crit = false;
-		int damage = _playerController.Attack + Random.Range(0, 5);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(0, 5);
 		string message = "Player tries to wake.";
 
-		if(Random.Range(1,100) < 15){
+		if(UnityEngine.Random.Range(1,100) < 50){
 			crit = true;
 			damage = damage * 2;
 			message = "Player wakes from a deep slumber!";
 		}
-
-		battleEnemy.Enemy.TakeDamage(damage, 0);
+		
+		int dmg = damage - Mathf.FloorToInt(battleEnemy.Enemy.Defense / damage);
+		if(dmg < 0) dmg = 0;
+		
+		battleEnemy.Enemy.TakeDamage(dmg);
 		StartCoroutine(ShowBattleMessage(message));
-
-		enemyNumberText.text = $"-{damage}";
-		if(crit)
-			animatorEnemyNumbers.SetBool("isCrit", true);
-		else
-			animatorEnemyNumbers.SetBool("isDamage", true);
+		
+		enemyNumberText.text = $"-{dmg}";
+		yield return StartCoroutine(DisplayDamage(0, crit));
+		
 	}
 
-	private void ActionPsychosis(){
+	IEnumerator ActionPsychosis(){
 		bool crit = false;
-		int damage = _playerController.Attack + Random.Range(0, 5);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(0, 5);
 		string message = "Player enters a state of psychosis.";
-
-		if(Random.Range(1,100) < 10){
+		int damageToPlayer = damage;
+		if(UnityEngine.Random.Range(1,100) < 50){
 			crit = true;
 			damage = damage * 2;
 			message = "Player experiences euphoria!";
 		}
 
-		battleEnemy.Enemy.TakeDamage(damage, 1);
+		int dmg = damage - Mathf.FloorToInt(battleEnemy.Enemy.Defense / damage);
+		if(dmg < 0) dmg = 0;
+
+		battleEnemy.Enemy.TakeDamage(dmg);
+		_playerController.TakeDamage(damageToPlayer);
 		StartCoroutine(ShowBattleMessage(message));
+		
 
-		enemyNumberText.text = $"-{damage}";
-		if(crit)
-			animatorEnemyNumbers.SetBool("isCrit", true);
-		else
-			animatorEnemyNumbers.SetBool("isDamage", true);
+		enemyNumberText.text = $"-{dmg}";
+		playerNumberText.text = $"-{damageToPlayer}";
+		yield return StartCoroutine(DisplayDamage(4, crit));
+
 	}
 
-	private void ActionSleep(){
-		_playerController.Defense += _playerController.Level + 1;
+	IEnumerator ActionSleep(){
+		_playerController.Defense += _playerController.Level + 5;
+		Debug.Log(_playerController.Defense);
 		StartCoroutine(ShowBattleMessage("Player feels asleep. Defense went up."));
+
+		yield return StartCoroutine(DisplayDamage(-1, false));
 	}
 
-	private void ActionDream(){
-		int heal = Mathf.FloorToInt(Random.Range(1, 10) * _playerController.Level);
+	IEnumerator ActionDream(){
+		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(1, 10) * _playerController.Level);
 		_playerController.HP += heal;
 		if(_playerController.HP > _playerController.MaxHP) _playerController.HP = _playerController.MaxHP;
 
 		StartCoroutine(ShowBattleMessage("Player starts dreaming."));
+
 		playerNumberText.text = $"+{heal}";
-		animatorPlayerNumbers.SetBool("isHeal", true);
+
+		yield return StartCoroutine(DisplayDamage(2, false));
 	}
 
 
@@ -307,44 +333,105 @@ public class BattleController : MonoBehaviour
 
 	// =======================================================================================================
 
-	public void EnemyAttack(){ 
+	IEnumerator EnemyAttack(){ 
 
 		bool crit = false;
-		int damage = battleEnemy.Enemy.Attack + Random.Range(0, 5);
+		int damage = battleEnemy.Enemy.Attack + UnityEngine.Random.Range(0, 5);
 		string message = battleEnemy.Enemy.EnemySO.AttackText;
 
-		if(Random.Range(1,100) < 10){
+		if(UnityEngine.Random.Range(1,100) < 50){
 			crit = true;
 			damage = damage * 2;
 		}
 
-		_playerController.TakeDamage(damage);
+		int dmg = damage - Mathf.FloorToInt(_playerController.Defense / damage);
+		if(dmg < 0) dmg = 0;
+
+		_playerController.TakeDamage(dmg);
 		
 		StartCoroutine(ShowBattleMessage(message));
 
-		playerNumberText.text = $"-{damage}";
-		if(crit)
-			animatorPlayerNumbers.SetBool("isCrit", true);
-		else
-			animatorPlayerNumbers.SetBool("isDamage", true);
-
-
+		playerNumberText.text = $"-{dmg}";
+		yield return StartCoroutine(DisplayDamage(1, crit));
 	}
 
-	public void EnemyHeal(){
-		int heal = Mathf.FloorToInt(Random.Range(1, 10) * battleEnemy.Enemy.Level / 2);
+	IEnumerator EnemyHeal(){
+		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(1, 10) * battleEnemy.Enemy.Level / 2);
 		battleEnemy.Enemy.HealHP(heal);
+
 		StartCoroutine(ShowBattleMessage(battleEnemy.Enemy.EnemySO.HealText));
+
 		enemyNumberText.text = $"+{heal}";
-		animatorEnemyNumbers.SetBool("isHeal", true);
+		yield return StartCoroutine(DisplayDamage(3, false));
+	}
+
+	IEnumerator EnemyTurn(){
+		yield return new WaitForSeconds(0.5f);
+		if(UnityEngine.Random.Range(1,100) < 20){
+			StartCoroutine(EnemyHeal());
+		} else {
+			StartCoroutine(EnemyAttack());
+		}
+		
 	}
 
 
+	IEnumerator DisplayDamage(int source, bool crit){
+		yield return new WaitForSeconds(1f);
+		if(source == 0){
+			if(crit){
+				_audioController.Play("Crit");
+				animatorEnemyNumbers.SetBool("isCrit", true);
+				animatorEnemy.SetBool("isCrit", true);
+			} else{
+				_audioController.Play("Hit");
+				animatorEnemyNumbers.SetBool("isDamage", true);
+				animatorEnemy.SetBool("isHit", true);
+			}
+
+		} else if (source == 1){
+			if(crit){
+				_audioController.Play("Crit");
+				animatorPlayerNumbers.SetBool("isCrit", true);
+				animatorPlayer.SetBool("isCrit", true);
+			} else{
+				_audioController.Play("Hit");
+				animatorPlayerNumbers.SetBool("isDamage", true);
+				animatorPlayer.SetBool("isHit", true);
+			}
+		} else if (source == 2){
+			_audioController.Play("Heal");
+			animatorPlayerNumbers.SetBool("isHeal", true);
+			animatorPlayer.SetBool("isHeal", true);
+		} else if (source == 3){
+			_audioController.Play("Hit");
+			animatorEnemyNumbers.SetBool("isHeal", true);
+			//animatorEnemy.SetBool("isHeal", true);
+		} else if (source == 4){
+			if(crit){
+				_audioController.Play("Crit");
+				animatorEnemyNumbers.SetBool("isCrit", true);
+				animatorEnemy.SetBool("isCrit", true);
+			} else{
+				_audioController.Play("Hit");
+				animatorEnemyNumbers.SetBool("isDamage", true);
+				animatorEnemy.SetBool("isHit", true);
+			}
+			_audioController.Play("Hit");
+			animatorPlayerNumbers.SetBool("isDamage", true);
+			animatorPlayer.SetBool("isHit", true);
+		} else if (source == -1){
+			// _audioController.Play("Shield");
+			// animatorPlayer.SetBool("isShield", true);
+		}
+
+		yield return null;
+	}
+
+	
 
 	IEnumerator SetupBattle(){
-		
 		battleEnemy.Setup(_battleEnemy);
-
 		SwitchBattleState(BattleState.MESSAGE);
 		yield return StartCoroutine(ShowBattleMessage(battleEnemy.Enemy.EnemySO.Appearance));
 
@@ -361,14 +448,14 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator SetBattleText(string battleMessage){
-
-		Debug.Log("DOES IT GET HERE");
 		_textSpeed = TEXTSPEED;
 		foreach(char letter in battleMessage.ToCharArray()){
+			_audioController.Play("Typing");
 			_battleMessageText.text += letter;
 			yield return new WaitForSeconds(_textSpeed);
 		}
 
+		yield return new WaitForSeconds(1f);
 		_finishedBattleMessage = true;
 		
 	}
@@ -387,8 +474,7 @@ public class BattleController : MonoBehaviour
 	}
 
 	private void DebugUI(){
-		_debugBattleState.text = "BATTLE STATE: " + State.ToString();
-		_debugEnemyHP.text = "ENEMY HP: " + battleEnemy.Enemy.HP;		
+		_debugEnemyHP.text = "Enemy HP: " + battleEnemy.Enemy.HP;
 	}
 
 	private void UpdatePlayerText(){

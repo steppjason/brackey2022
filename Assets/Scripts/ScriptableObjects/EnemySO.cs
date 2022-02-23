@@ -7,7 +7,7 @@ public enum EnemyMove { ATTACK, DEFEND, HEAL }
 [CreateAssetMenu(fileName = "Enemy", menuName = "Enemy/New Enemy" )]
 public class EnemySO : ScriptableObject
 {
-	[SerializeField] string name;
+	[SerializeField] string enemyName;
 
 	[TextArea]
 	[SerializeField] string description;
@@ -28,11 +28,11 @@ public class EnemySO : ScriptableObject
 	[SerializeField] EnemyMove[] moves;
 
 	public string Name{
-		get { return name; }
+		get { return enemyName; }
 	}
 
 	public string Description{
-		get { return name; }
+		get { return description; }
 	}
 
 	public string Appearance{

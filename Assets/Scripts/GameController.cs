@@ -21,13 +21,15 @@ public class GameController : MonoBehaviour
 
 	[SerializeField] public TMP_Text DebugGameState;
 	[SerializeField] public TMP_Text DebugMenuSelection;
+	[SerializeField] public TMP_Text DebugBattleState;
+	[SerializeField] public TMP_Text DebugAction;
+	[SerializeField] public TMP_Text DebugEnemyHP;
 
 	public GameState State {get;set;}
     public int LevelIndex {get; set;}
 
     private Fader fader;
     private GameObject _playerStart;
-	private bool _playerWin;
 
 
     // public GameObject startScreen;
@@ -58,6 +60,33 @@ public class GameController : MonoBehaviour
 
 		State = GameState.GAME;
 		_battleController.battleCanvas.enabled = false;
+
+		//_playerController.OnBattle += OnBattle;
+		_battleController.OnBattleEnter += OnBattleEnter;
+		_battleController.OnBattleExit += OnBattleExit;
+
+		_dialogueController.OnDialogueEnter += OnDialogueEnter;
+		_dialogueController.OnDialogueExit += OnDialogueExit;
+	}
+
+	public void OnBattleEnter(){
+		_playerController.canMove = false;
+		State = GameState.BATTLE;
+	}
+
+	public void OnBattleExit(){
+		_playerController.canMove = true;
+		State = GameState.GAME;
+	}
+
+	public void OnDialogueEnter(){
+		_playerController.canMove = false;
+		State = GameState.PAUSE;
+	}
+
+	public void OnDialogueExit(){
+		_playerController.canMove = true;
+		State = GameState.GAME;
 	}
 
 	IEnumerator WaitForFade(){
@@ -71,7 +100,12 @@ public class GameController : MonoBehaviour
 
 	private void DebugUI(){
 		DebugGameState.text = "GameState: " + State.ToString();
+		DebugAction.text = "Action: " + _playerController.action;
 		DebugMenuSelection.text = "MenuSelection: " + _battleController._menuSelection;
+
+		DebugBattleState.text = "BATTLE STATE: " + _battleController.State.ToString();
+//		DebugEnemyHP.text = "ENEMY HP: " + _battleController.battleEnemy.Enemy.HP;		
+		
 	}
 
     void Update()
@@ -81,6 +115,10 @@ public class GameController : MonoBehaviour
 	
 		if(Input.GetKeyDown(KeyCode.KeypadEnter)){
 			UpdateGameState(State);
+		}
+
+		if(Input.GetKeyDown(KeyCode.Backspace)){
+			_battleController.State = BattleState.START;
 		}
 			
 
@@ -211,7 +249,7 @@ public class GameController : MonoBehaviour
     }
 
     IEnumerator NextLevel(int scene, GameState gameState){
-        _playerWin = false;
+       // _playerWin = false;
         
         yield return new WaitForSeconds(1f);
         //levelWarpSound.Play();

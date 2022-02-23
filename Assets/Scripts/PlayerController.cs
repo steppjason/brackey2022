@@ -1,20 +1,20 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-	
-	private GameObject _player;
-	
-	private GameController _gameController;
-	//private PlayerController _playerController;
-	private DialogueController _dialogueController;
-	private BattleController _battleController;
 
+	//[SerializeField] private GameController _gameController; 
+	[SerializeField] private AudioController _audioController;
+	
 	private GameObject _collider;
 	private Vector2 _input;
 	private Animator _animator;
+
+	//public event Action OnDialogue;
+	//public event Action OnBattle;
 
 
 	[SerializeField] public Camera _camera;
@@ -40,9 +40,7 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _dialogueController = FindObjectOfType<DialogueController>();
-		_gameController = FindObjectOfType<GameController>();
-		_battleController = FindObjectOfType<BattleController>();
+		// _gameController = FindObjectOfType<GameController>();
 
 		this.Level = 3;
 		this.MaxHP = 25 * this.Level;
@@ -50,28 +48,32 @@ public class PlayerController : MonoBehaviour
 		this.Attack = 10;
 		this.Defense = 10;
 		this.Speed = 10;
-		
-		// this.MP = 100;
-		
+	
 	}
 
     // Update is called once per frame
     void Update()
     {
 		_camera.transform.position = new Vector3(transform.position.x, transform.position.y, -10);
-		
-		if(action && _gameController.State == GameState.GAME && (Input.GetKeyDown(KeyCode.RightControl) || Input.GetKeyDown(KeyCode.LeftControl))){
-			
-			if(_collider.GetComponent<DialogueTrigger>())
-				_collider.GetComponent<DialogueTrigger>().TriggerDialogue();
 
+		if(action && canMove && (Input.GetKeyDown(KeyCode.RightControl) || Input.GetKeyDown(KeyCode.LeftControl))){
+			
+			if(_collider.GetComponent<DialogueTrigger>()){				
+				_collider.GetComponent<DialogueTrigger>().TriggerDialogue();
+			}
+				
+			if(_collider.GetComponent<BattleTrigger>()){
+				_collider.GetComponent<BattleTrigger>().TriggerBattle();
+			}
+				
 		}
 
 	}
 
 	private void FixedUpdate() {
 
-		if (_gameController.State == GameState.GAME)
+		//if (_gameController.State == GameState.GAME)
+		if (canMove)
 		{
 			_input.x = Input.GetAxisRaw("Horizontal");
 			_input.y = Input.GetAxisRaw("Vertical");
@@ -95,11 +97,6 @@ public class PlayerController : MonoBehaviour
 	private void OnTriggerEnter2D(Collider2D other) {
 		action = true;
 		_collider = other.gameObject;
-
-		if(_collider.GetComponent<BattleTrigger>()){
-				_collider.GetComponent<BattleTrigger>().TriggerBattle();
-		}
-			
 	}
 
 	private void OnTriggerExit2D(Collider2D other) {
@@ -113,7 +110,7 @@ public class PlayerController : MonoBehaviour
 	}
 
 	public void TakeDamage(int damage){
-		this.HP = this.HP - (damage - Mathf.FloorToInt(this.Defense / damage));
+		this.HP = this.HP - damage;
 		if(this.HP < 0) this.HP = 0;
 	}
 }

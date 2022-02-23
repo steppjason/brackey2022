@@ -48,13 +48,8 @@ public class Enemy
 		_currentHP = MaxHP;
 	}
 
-	public void TakeDamage(int damage, int source){
-		if(source == 0){
-			_currentHP = _currentHP - (damage - Mathf.FloorToInt(this.Defense / damage));
-		} else if (source == 1) {
-			_currentHP = _currentHP - (damage - Mathf.FloorToInt(damage / this.Defense));
-		}
-
+	public void TakeDamage(int damage){
+		_currentHP -= damage;
 		if(_currentHP < 0) _currentHP = 0;
 	}
 

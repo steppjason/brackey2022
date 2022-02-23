@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,12 +8,14 @@ using TMPro;
 public class DialogueController : MonoBehaviour
 {
 
-	private GameController _gameController;
-	private PlayerController _playerController;
-	//private DialogueController _dialogueController;
-	private BattleController _battleController;
+	//[SerializeField] private GameController _gameController;
+	[SerializeField] private PlayerController _playerController;
+	[SerializeField] public AudioController _audioController;
 
-	private Queue<string> _lines;
+	public event Action OnDialogueEnter;
+	public event Action OnDialogueExit;
+
+	private List<string> _lines;
 	private bool _isActive;
 	private float _textSpeed;
 	private bool nextLine = false;
@@ -33,18 +36,16 @@ public class DialogueController : MonoBehaviour
 	
 	void Start()
     {
-		_lines = new Queue<string>();
-
-		//_dialogueController = FindObjectOfType<DialogueController>();
-		_gameController = FindObjectOfType<GameController>();
-		_playerController = FindObjectOfType<PlayerController>();
-		_battleController = FindObjectOfType<BattleController>();
+		_lines = new List<string>();		
+		// _gameController = FindObjectOfType<GameController>();
+		// _playerController = FindObjectOfType<PlayerController>();
 	}
 
 	private void Update() {
 
 		if(_isActive){
 			if(nextLine && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
+				_audioController.Play("Menu Select");
 				DisplayNextSentence();
 			} else if (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)){
 				_textSpeed = 0.0001f;
@@ -56,8 +57,8 @@ public class DialogueController : MonoBehaviour
 
 	public void BeginDialogue(Dialogue dialogue){
 
-		_gameController.State = GameState.PAUSE;
-		
+		//_gameController.State = GameState.PAUSE;
+		OnDialogueEnter();
 
 		_isActive = true;
 
@@ -66,7 +67,8 @@ public class DialogueController : MonoBehaviour
 		_lines.Clear();
 
 		foreach(string line in dialogue.lines){
-			_lines.Enqueue(line);
+			//_lines.Enqueue(line);
+			_lines.Add(line);
 		}
 
 		animator.SetBool("isShowing", true);
@@ -83,7 +85,12 @@ public class DialogueController : MonoBehaviour
 			return;
 		}
 
-		string line = _lines.Dequeue();
+
+		//string line = _lines.Dequeue();
+		string line = _lines[0];
+		_lines.RemoveAt(0);
+		_lines.Remove(line);
+
 
 		StopAllCoroutines();
 		StartCoroutine(DisplayLine(line));
@@ -102,6 +109,8 @@ public class DialogueController : MonoBehaviour
 	IEnumerator DisplayLine(string line){
 		
 		foreach(char letter in line.ToCharArray()){
+			//if(_textSpeed > 0.001) _audioController.Play("Typing");
+			_audioController.Play("Typing");
 			dialogueText.text += letter;
 			yield return new WaitForSeconds(_textSpeed);
 		}
@@ -113,7 +122,8 @@ public class DialogueController : MonoBehaviour
 		_isActive = false;
 		animator.SetBool("isShowing", false);
 		StartCoroutine(WaitForBoxExit(0.75f));
-		_gameController.State = GameState.GAME;
+		//_gameController.State = GameState.GAME;
+		OnDialogueExit();
 	}
 
 }
