@@ -41,6 +41,18 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: TileMap_Ground
+    uniqueID: 1047321377
+    locked: 0
+  - name: Player
+    uniqueID: 668164225
+    locked: 0
+  - name: Shadow
+    uniqueID: 3269310153
+    locked: 0
+  - name: Trees
+    uniqueID: 3988531271
+    locked: 0
   - name: GameUI
     uniqueID: 877435609
     locked: 0

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
+using DG.Tweening;
 
 public enum GameState { MENU, BATTLE, GAME, DEAD, CREDITS, PAUSE }
 
@@ -14,10 +15,13 @@ public class GameController : MonoBehaviour
 	[SerializeField] private PlayerController _playerController;
 	[SerializeField] private DialogueController _dialogueController;
 	[SerializeField] private BattleController _battleController;
+	[SerializeField] private AudioController _audioController;
 
 	private GameObject _player;
 
 	[SerializeField] private Camera _mainCamera;
+	[SerializeField] private GameObject _titleScreen;
+	[SerializeField] private GameObject _gameOver;
 
 	[SerializeField] public TMP_Text DebugGameState;
 	[SerializeField] public TMP_Text DebugMenuSelection;
@@ -36,100 +40,55 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
-		StartCoroutine(WaitForFade());
+		StartCoroutine(WaitForFadeOut(2f,1f));
 
 		State = GameState.PAUSE;
 		_battleController.battleCanvas.enabled = false;
 
 		_battleController.OnBattleEnter += OnBattleEnter;
 		_battleController.OnBattleExit += OnBattleExit;
+		_battleController.OnPlayerDeath += OnPlayerDeath;
 
 		_dialogueController.OnDialogueEnter += OnDialogueEnter;
 		_dialogueController.OnDialogueExit += OnDialogueExit;
+		_audioController.FadeIn("NORMAL MUSIC", 20f, 0.20f);
+		
 	}
 
 
 
     void Update()
     {
-		DebugUI();
-
-	
-		if(Input.GetKeyDown(KeyCode.KeypadEnter)){
-			UpdateGameState(State);
-		}
-
-		if(Input.GetKeyDown(KeyCode.Backspace)){
-			_battleController.State = BattleState.START;
-		}
+		if(State == GameState.DEAD){
 			
+			if(Input.GetKeyDown(KeyCode.Escape)){
+				//ReturnToTitle();
+			}
 
-		// if(State == GameState.StartScreen){
+		}
 
-		//     if(Input.GetKeyDown("return")){
-		//         startSound.Play();
-		//         StartCoroutine(SwitchScene(LevelIndex, GameState.Game));
-		//     }
-
-		//     if(Input.GetKeyDown("escape")){
-		//         QuitGame();
-		//     }
+		DebugUI();
+	
+		// if(Input.GetKeyDown(KeyCode.KeypadEnter)){
+		// 	UpdateGameState(State);
 		// }
 
-		if(State == GameState.GAME){
-            
-            // if(CheckForWin()){
-            //     UpdateGameState(GameState.Win);
-            //     LevelIndex += 1;
+		// if(Input.GetKeyDown(KeyCode.Backspace)){
+		// 	_battleController.State = BattleState.START;
+		// }
+		
+		// if(State == GameState.GAME){
                 
-            //     if(LevelIndex == CREDITS)
-            //         StartCoroutine(NextLevel(LevelIndex, GameState.Credits));
-            //     else
-            //         StartCoroutine(NextLevel(LevelIndex, GameState.Game));
-            // }
-                
-            if(Input.GetKeyDown("escape")){
-                QuitGame();
-            }
-        } 
-        
-        // if(State == GameState.Game || State == GameState.Dead) {
-
-        //     if(Input.GetKeyDown("r") && !_playerController.isMoving ){
-        //         Debug.Log("Game Reset");
-        //         ResetLevel();
-        //         // StartCoroutine(gametext.FadeOut(0f));
-        //     }
-
         //     if(Input.GetKeyDown("escape")){
         //         QuitGame();
         //     }
-        // }
+        // } 
+        
+
             
     }
 
-    // public bool CheckForWin(){
-        
-    //     if((_player.transform.position - Player_1_End.transform.position).sqrMagnitude < Mathf.Epsilon){
-    //         player_1_win = true;
-    //     } else {
-    //         player_1_win = false;
-    //     }
-
-    //     if((player_2.transform.position - Player_2_End.transform.position).sqrMagnitude < Mathf.Epsilon){
-    //         player_2_win = true;
-    //     } else {
-    //         player_2_win = false;
-    //     }
-
-    //     if(player_1_win && player_2_win){
-    //         winSound.Play();
-    //         return true;
-    //     }
-            
-
-    //     return false;
-    // }
+  
 
 	private void DebugUI(){
 		DebugGameState.text = "GameState: " + State.ToString();
@@ -195,27 +154,47 @@ public class GameController : MonoBehaviour
 	}
 
 
-	IEnumerator WaitForFade(){
-		yield return new WaitForSeconds(3);
-		StartCoroutine(StartFade());
+	IEnumerator WaitForFadeOut(float fadeTime, float waitTime){
+		yield return new WaitForSeconds(waitTime);
+		StartCoroutine(FadeOut(fadeTime));
 	}
 
-	IEnumerator StartFade(){
-		yield return _fader.FadeOut(2f);
+	IEnumerator WaitForFadeIn(float fadeTime, float waitTime){
+		StartCoroutine(FadeIn(fadeTime));
+		yield return new WaitForSeconds(waitTime);
 	}
 
+	IEnumerator FadeOut(float fadeout){
+		yield return _fader.FadeOut(fadeout);
+	}
+
+	IEnumerator FadeIn(float fadein){
+		yield return _fader.FadeIn(fadein);
+	}
 
 
 
 
 	public void OnBattleEnter(){
+		_audioController.FadeOut("NORMAL MUSIC", 1f, 0f);
 		_playerController.canMove = false;
 		State = GameState.BATTLE;
+		_audioController.FadeIn("BATTLE MUSIC", 5f, 0.2f);
+	}
+
+	public void OnPlayerDeath(){
+		_audioController.FadeOut("BATTLE MUSIC", 1f, 0f);
+		_audioController.FadeOut("NORMAL MUSIC", 20f, 0.2f);
+		_playerController.canMove = false;
+		State = GameState.DEAD;
+		_gameOver.SetActive(true);
 	}
 
 	public void OnBattleExit(){
+		_audioController.FadeOut("BATTLE MUSIC", 1f, 0f);
 		_playerController.canMove = true;
 		State = GameState.GAME;
+		_audioController.FadeIn("NORMAL MUSIC", 20f, 0.2f);
 	}
 
 	public void OnDialogueEnter(){

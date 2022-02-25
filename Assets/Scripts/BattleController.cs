@@ -14,6 +14,7 @@ public class BattleController : MonoBehaviour
 
 	public event Action OnBattleEnter;
 	public event Action OnBattleExit;
+	public event Action OnPlayerDeath;
 
 	//[SerializeField] private GameController _gameController;
 	[SerializeField] private PlayerController _playerController;
@@ -23,6 +24,7 @@ public class BattleController : MonoBehaviour
 
 	[Header("INTERFACE")]
 	[SerializeField] public Canvas battleCanvas;
+	[SerializeField] public Image _backgroundImage;
 	[SerializeField] private TMP_Text _battleMessageText;
 
 	[SerializeField] private TMP_Text _playerMPText;
@@ -37,6 +39,7 @@ public class BattleController : MonoBehaviour
 	[SerializeField] private Animator animatorEnemyNumbers;
 	[SerializeField] private Animator animatorEnemy;
 	[SerializeField] private Animator animatorPlayer;
+	 [SerializeField] public Fader _fader;
 
 	[Header("AUDIO")]
 	public AudioController _audioController;
@@ -57,17 +60,27 @@ public class BattleController : MonoBehaviour
 
 	private bool _battleStart = false;
 	private bool _playersTurn = false;
+	private bool moveLeft = false;
 
 
 	void Start()
     {
-		// _gameController = FindObjectOfType<GameController>();
-		// _playerController = FindObjectOfType<PlayerController>();
-
+		_backgroundImage.rectTransform.position = new Vector3(0, 0, 0);
 	}
 
 
 	private void Update() {
+
+		if(_backgroundImage.rectTransform.anchoredPosition.x >= 4000 && !moveLeft)
+				moveLeft = true;
+		else if (_backgroundImage.rectTransform.anchoredPosition.x <= -4000 && moveLeft)
+			moveLeft = false;
+			
+		if(moveLeft) _backgroundImage.rectTransform.anchoredPosition = new Vector2(_backgroundImage.rectTransform.anchoredPosition.x - 0.3f, 0);
+		else if(!moveLeft) _backgroundImage.rectTransform.anchoredPosition = new Vector2(_backgroundImage.rectTransform.anchoredPosition.x + 0.3f, 0);
+		
+		
+
 
 		//if(_gameController.State == GameState.BATTLE){
 		if(State != BattleState.END){
@@ -79,7 +92,7 @@ public class BattleController : MonoBehaviour
 			if(_finishedBattleMessage && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
 				_audioController.Play("Menu Select");
 				animator.SetBool("isShowing", false);
-				StartCoroutine(WaitForBoxExit(0.75f));
+				StartCoroutine(WaitForBoxExit(0.5f));
 				StartCoroutine(ExitBattle());
 			}
 		}
@@ -87,21 +100,35 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator ExitBattle(){
-		yield return new WaitForSeconds(2f);
+		
+		StartCoroutine(_fader.FadeIn(1f));
+		yield return new WaitForSeconds(1f);
+
 		if(_playerController.HP <= 0){
 			Debug.Log("Player dies here");
-			// Do something? Send to next day?
+			OnPlayerDeath();
+			_isGameOver = true;
+		} else {
+			OnBattleExit();
 		}
-		//_gameController.State = GameState.GAME;
+
 		State = BattleState.END;
 		_isGameOver = false;
 		battleCanvas.enabled = false;
-		OnBattleExit();
+
+		StartCoroutine(_fader.FadeOut(1f));
+		yield return new WaitForSeconds(1f);
+	}
+
+	public void FalseStartBattle(Enemy encounter){
+		StartCoroutine(BeginBattle(encounter));
 	}
 
 	
-	public void BeginBattle(Enemy encounter){
+	IEnumerator BeginBattle(Enemy encounter){
 		OnBattleEnter();
+		StartCoroutine(_fader.FadeIn(1f));
+		yield return new WaitForSeconds(1f);
 		animatorEnemy.SetBool("isDeath", false);
 		SwitchBattleState(BattleState.START);
 		_battleEnemy = encounter;
@@ -109,7 +136,10 @@ public class BattleController : MonoBehaviour
 		_finishedBattleMessage = false;
 		_isGameOver = false;
 		_battleStart = true;
+		StartCoroutine(_fader.FadeOut(1f));
+		yield return new WaitForSeconds(1f);
 		StartCoroutine(SetupBattle());
+		yield return null;
 	}
 	
 	public void UserInput(){
@@ -158,7 +188,7 @@ public class BattleController : MonoBehaviour
 			if(!_isGameOver && _finishedBattleMessage && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
 				_audioController.Play("Menu Select");
 				animator.SetBool("isShowing", false);
-				StartCoroutine(WaitForBoxExit(0.75f));
+				StartCoroutine(WaitForBoxExit(0.5f));
 				
 				if(battleEnemy.Enemy.HP <= 0){
 					_isGameOver = true;
@@ -169,6 +199,8 @@ public class BattleController : MonoBehaviour
 
 				if(_playerController.HP <= 0){
 					_isGameOver = true;
+					_audioController.FadeOut("BATTLE MUSIC", 1f, 0f);
+					_audioController.Play("DEATH MUSIC");
 					StartCoroutine(ShowBattleMessage("You woke up."));
 					return;
 				}
@@ -186,7 +218,7 @@ public class BattleController : MonoBehaviour
 
 
 	IEnumerator SetTurn(){
-		yield return new WaitForSeconds(0.5f);
+		yield return new WaitForSeconds(0.25f);
 		if(_battleStart){
 
 			_battleStart = false;
@@ -260,7 +292,7 @@ public class BattleController : MonoBehaviour
 	IEnumerator ActionWake(){
 
 		bool crit = false;
-		int damage = _playerController.Attack + UnityEngine.Random.Range(0, 5);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 2);
 		string message = "Player tries to wake.";
 
 		if(UnityEngine.Random.Range(1,100) < 50){
@@ -282,7 +314,7 @@ public class BattleController : MonoBehaviour
 
 	IEnumerator ActionPsychosis(){
 		bool crit = false;
-		int damage = _playerController.Attack + UnityEngine.Random.Range(0, 5);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 3);
 		string message = "Player enters a state of psychosis.";
 		int damageToPlayer = damage;
 		if(UnityEngine.Random.Range(1,100) < 50){
@@ -306,7 +338,7 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator ActionSleep(){
-		_playerController.Defense += _playerController.Level + 5;
+		_playerController.Defense += _playerController.Level / 2 *  5;
 		Debug.Log(_playerController.Defense);
 		StartCoroutine(ShowBattleMessage("Player feels asleep. Defense went up."));
 
@@ -314,7 +346,7 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator ActionDream(){
-		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(1, 10) * _playerController.Level);
+		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(5, 10) * _playerController.Level);
 		_playerController.HP += heal;
 		if(_playerController.HP > _playerController.MaxHP) _playerController.HP = _playerController.MaxHP;
 
@@ -336,10 +368,10 @@ public class BattleController : MonoBehaviour
 	IEnumerator EnemyAttack(){ 
 
 		bool crit = false;
-		int damage = battleEnemy.Enemy.Attack + UnityEngine.Random.Range(0, 5);
+		int damage = battleEnemy.Enemy.Attack + UnityEngine.Random.Range(1, 2);
 		string message = battleEnemy.Enemy.EnemySO.AttackText;
 
-		if(UnityEngine.Random.Range(1,100) < 50){
+		if(UnityEngine.Random.Range(1,100) < 20){
 			crit = true;
 			damage = damage * 2;
 		}
@@ -356,7 +388,7 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator EnemyHeal(){
-		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(1, 10) * battleEnemy.Enemy.Level / 2);
+		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(1, 3) * battleEnemy.Enemy.Level / 2);
 		battleEnemy.Enemy.HealHP(heal);
 
 		StartCoroutine(ShowBattleMessage(battleEnemy.Enemy.EnemySO.HealText));
@@ -377,7 +409,7 @@ public class BattleController : MonoBehaviour
 
 
 	IEnumerator DisplayDamage(int source, bool crit){
-		yield return new WaitForSeconds(1f);
+		yield return new WaitForSeconds(0.75f);
 		if(source == 0){
 			if(crit){
 				_audioController.Play("Crit");
@@ -444,7 +476,7 @@ public class BattleController : MonoBehaviour
 
 		animator.SetBool("isShowing", true);
 		StopAllCoroutines();
-		yield return StartCoroutine(WaitForBoxEnter(0.75f, message));
+		yield return StartCoroutine(WaitForBoxEnter(0.5f, message));
 	}
 
 	IEnumerator SetBattleText(string battleMessage){
@@ -455,7 +487,7 @@ public class BattleController : MonoBehaviour
 			yield return new WaitForSeconds(_textSpeed);
 		}
 
-		yield return new WaitForSeconds(1f);
+		yield return new WaitForSeconds(0.75f);
 		_finishedBattleMessage = true;
 		
 	}

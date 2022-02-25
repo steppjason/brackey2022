@@ -13,7 +13,7 @@ public class BattleTrigger : MonoBehaviour
 		if(!isDead){
 			isDead = true;
 			_encounter.Init();
-			FindObjectOfType<BattleController>().BeginBattle(_encounter);
+			FindObjectOfType<BattleController>().FalseStartBattle(_encounter);
 		}
 	}
 }
