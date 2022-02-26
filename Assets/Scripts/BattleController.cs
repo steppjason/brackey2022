@@ -12,8 +12,8 @@ public class BattleController : MonoBehaviour
 
 	const float TEXTSPEED = 0.005f;
 
-	public event Action OnBattleEnter;
-	public event Action OnBattleExit;
+	public event Action<bool> OnBattleEnter;
+	public event Action<int> OnBattleExit;
 	public event Action OnPlayerDeath;
 
 	//[SerializeField] private GameController _gameController;
@@ -39,7 +39,7 @@ public class BattleController : MonoBehaviour
 	[SerializeField] private Animator animatorEnemyNumbers;
 	[SerializeField] private Animator animatorEnemy;
 	[SerializeField] private Animator animatorPlayer;
-	 [SerializeField] public Fader _fader;
+	[SerializeField] public Fader _fader;
 
 	[Header("AUDIO")]
 	public AudioController _audioController;
@@ -48,6 +48,8 @@ public class BattleController : MonoBehaviour
 	[Header("DEBUG")]
 	[SerializeField] private TMP_Text _debugBattleState;
 	[SerializeField] private TMP_Text _debugEnemyHP;
+	[SerializeField] private TMP_Text _debugPlayerAttack;
+	[SerializeField] private TMP_Text _debugPlayerDefense;
 
 	[HideInInspector] public int _menuSelection = 0;
 	[HideInInspector] public BattleState State;
@@ -109,24 +111,24 @@ public class BattleController : MonoBehaviour
 			OnPlayerDeath();
 			_isGameOver = true;
 		} else {
-			OnBattleExit();
+			OnBattleExit(_battleEnemy.loadLevel);
 		}
 
 		State = BattleState.END;
 		_isGameOver = false;
 		battleCanvas.enabled = false;
 
-		StartCoroutine(_fader.FadeOut(1f));
-		yield return new WaitForSeconds(1f);
+		// StartCoroutine(_fader.FadeOut(1f));
+		// yield return new WaitForSeconds(1f);
 	}
 
-	public void FalseStartBattle(Enemy encounter){
-		StartCoroutine(BeginBattle(encounter));
+	public void FalseStartBattle(Enemy encounter, bool boss){
+		StartCoroutine(BeginBattle(encounter, boss));
 	}
 
 	
-	IEnumerator BeginBattle(Enemy encounter){
-		OnBattleEnter();
+	IEnumerator BeginBattle(Enemy encounter, bool boss){
+		OnBattleEnter(boss);
 		StartCoroutine(_fader.FadeIn(1f));
 		yield return new WaitForSeconds(1f);
 		animatorEnemy.SetBool("isDeath", false);
@@ -136,9 +138,10 @@ public class BattleController : MonoBehaviour
 		_finishedBattleMessage = false;
 		_isGameOver = false;
 		_battleStart = true;
+		StartCoroutine(SetupBattle());
 		StartCoroutine(_fader.FadeOut(1f));
 		yield return new WaitForSeconds(1f);
-		StartCoroutine(SetupBattle());
+		
 		yield return null;
 	}
 	
@@ -199,8 +202,7 @@ public class BattleController : MonoBehaviour
 
 				if(_playerController.HP <= 0){
 					_isGameOver = true;
-					_audioController.FadeOut("BATTLE MUSIC", 1f, 0f);
-					_audioController.Play("DEATH MUSIC");
+					_audioController.FadeOut("BATTLE MUSIC", 5f, 0f);
 					StartCoroutine(ShowBattleMessage("You woke up."));
 					return;
 				}
@@ -292,10 +294,10 @@ public class BattleController : MonoBehaviour
 	IEnumerator ActionWake(){
 
 		bool crit = false;
-		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 2);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 5);
 		string message = "Player tries to wake.";
 
-		if(UnityEngine.Random.Range(1,100) < 50){
+		if(UnityEngine.Random.Range(1,100) < 20){
 			crit = true;
 			damage = damage * 2;
 			message = "Player wakes from a deep slumber!";
@@ -314,7 +316,7 @@ public class BattleController : MonoBehaviour
 
 	IEnumerator ActionPsychosis(){
 		bool crit = false;
-		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 3);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 5);
 		string message = "Player enters a state of psychosis.";
 		int damageToPlayer = damage;
 		if(UnityEngine.Random.Range(1,100) < 50){
@@ -323,7 +325,8 @@ public class BattleController : MonoBehaviour
 			message = "Player experiences euphoria!";
 		}
 
-		int dmg = damage - Mathf.FloorToInt(battleEnemy.Enemy.Defense / damage);
+		int dmg = damage - Mathf.FloorToInt(battleEnemy.Enemy.Defense + 
+						UnityEngine.Random.Range(battleEnemy.Enemy.Defense / 10, battleEnemy.Enemy.Defense / 5));
 		if(dmg < 0) dmg = 0;
 
 		battleEnemy.Enemy.TakeDamage(dmg);
@@ -338,7 +341,7 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator ActionSleep(){
-		_playerController.Defense += _playerController.Level / 2 *  5;
+		_playerController.Defense += 1;
 		Debug.Log(_playerController.Defense);
 		StartCoroutine(ShowBattleMessage("Player feels asleep. Defense went up."));
 
@@ -346,7 +349,7 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator ActionDream(){
-		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(5, 10) * _playerController.Level);
+		int heal = _playerController.Level * 2 ;
 		_playerController.HP += heal;
 		if(_playerController.HP > _playerController.MaxHP) _playerController.HP = _playerController.MaxHP;
 
@@ -376,7 +379,7 @@ public class BattleController : MonoBehaviour
 			damage = damage * 2;
 		}
 
-		int dmg = damage - Mathf.FloorToInt(_playerController.Defense / damage);
+		int dmg = damage - _playerController.Defense;
 		if(dmg < 0) dmg = 0;
 
 		_playerController.TakeDamage(dmg);
@@ -388,7 +391,7 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator EnemyHeal(){
-		int heal = Mathf.FloorToInt(UnityEngine.Random.Range(1, 3) * battleEnemy.Enemy.Level / 2);
+		int heal =  battleEnemy.Enemy.Level / 2;
 		battleEnemy.Enemy.HealHP(heal);
 
 		StartCoroutine(ShowBattleMessage(battleEnemy.Enemy.EnemySO.HealText));
@@ -506,7 +509,9 @@ public class BattleController : MonoBehaviour
 	}
 
 	private void DebugUI(){
-		_debugEnemyHP.text = "Enemy HP: " + battleEnemy.Enemy.HP;
+		_debugEnemyHP.text = "Enemy HP: " + battleEnemy.Enemy.HP + " | ENEMY LEVEL: " + battleEnemy.Enemy.Level;
+		_debugPlayerAttack.text = "PLAYER ATTACK: " + _playerController.Attack;
+		_debugPlayerDefense.text = "PLAYER DEFENSE: " + _playerController.Defense;
 	}
 
 	private void UpdatePlayerText(){

@@ -31,6 +31,12 @@ public class AudioController : MonoBehaviour
 		sfx.source.Stop();
 	}
 
+	public void StopAll(){
+		foreach(AudioSound music in audioClips){
+			music.source.Stop();
+		}
+	}
+
 	public void FadeIn(string name, float fadeTime, float volume){
 		AudioSound sfx = Array.Find(audioClips, audioClip => audioClip.name == name);
 		sfx.volume = 0f;

@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 using TMPro;
 using DG.Tweening;
 
-public enum GameState { MENU, BATTLE, GAME, DEAD, CREDITS, PAUSE }
+public enum GameState { TITLE, BATTLE, GAME, DEAD, CREDITS, PAUSE }
 
 public class GameController : MonoBehaviour
 {
@@ -16,12 +16,14 @@ public class GameController : MonoBehaviour
 	[SerializeField] private DialogueController _dialogueController;
 	[SerializeField] private BattleController _battleController;
 	[SerializeField] private AudioController _audioController;
+	[SerializeField] private WarpController _warpController;
 
 	private GameObject _player;
 
 	[SerializeField] private Camera _mainCamera;
 	[SerializeField] private GameObject _titleScreen;
 	[SerializeField] private GameObject _gameOver;
+	[SerializeField] private GameObject _creditsScreen;
 
 	[SerializeField] public TMP_Text DebugGameState;
 	[SerializeField] public TMP_Text DebugMenuSelection;
@@ -40,18 +42,21 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
+		State = GameState.PAUSE;
 		StartCoroutine(WaitForFadeOut(2f,1f));
 
-		State = GameState.PAUSE;
 		_battleController.battleCanvas.enabled = false;
-
 		_battleController.OnBattleEnter += OnBattleEnter;
 		_battleController.OnBattleExit += OnBattleExit;
 		_battleController.OnPlayerDeath += OnPlayerDeath;
 
 		_dialogueController.OnDialogueEnter += OnDialogueEnter;
 		_dialogueController.OnDialogueExit += OnDialogueExit;
-		_audioController.FadeIn("NORMAL MUSIC", 20f, 0.20f);
+
+		_warpController.OnWarpEnter += OnWarpEnter;
+		//_warpController.OnWarpExit += OnWarpExit;
+
+		//_audioController.FadeIn("CREEP MUSIC", 5f, 0.20f);
 		
 	}
 
@@ -60,36 +65,33 @@ public class GameController : MonoBehaviour
     void Update()
     {
 		if(State == GameState.DEAD){
-			
 			if(Input.GetKeyDown(KeyCode.Escape)){
-				//ReturnToTitle();
+				GameObject game = GameObject.Find("GameCore");
+				SceneManager.LoadScene(0);
+				Destroy(game);
 			}
+		}
 
+		if(State == GameState.TITLE){
+
+			if(Input.GetKeyDown(KeyCode.Return)){
+				_audioController.Play("Menu Select");
+				StartCoroutine(SwitchScene(2));
+			}
+		}
+
+		if(State == GameState.PAUSE){
+			_playerController.canMove = false;
+		}
+
+		if(State == GameState.CREDITS){
+			
 		}
 
 		DebugUI();
-	
-		// if(Input.GetKeyDown(KeyCode.KeypadEnter)){
-		// 	UpdateGameState(State);
-		// }
-
-		// if(Input.GetKeyDown(KeyCode.Backspace)){
-		// 	_battleController.State = BattleState.START;
-		// }
-		
-		// if(State == GameState.GAME){
-                
-        //     if(Input.GetKeyDown("escape")){
-        //         QuitGame();
-        //     }
-        // } 
-        
-
-            
     }
 
   
-
 	private void DebugUI(){
 		DebugGameState.text = "GameState: " + State.ToString();
 		DebugAction.text = "Action: " + _playerController.action;
@@ -100,63 +102,39 @@ public class GameController : MonoBehaviour
 		
 	}
 
-    public void QuitGame()
-    {
-        #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-        #endif
-
-        #if UNITY_64
-            Application.Quit();
-        #endif
-    }
-
-    public void UpdateGameState(GameState state){
-
-		switch(state){
-			case GameState.MENU:
-				state = GameState.GAME;
-				break;
-			case GameState.GAME:
-				state = GameState.BATTLE;
-				break;
-			case GameState.BATTLE:
-				state = GameState.DEAD;
-				break;
-			case GameState.DEAD:
-				state = GameState.CREDITS;
-				break;
-			case GameState.CREDITS:
-				state = GameState.MENU;
-				break;
-			default:
-				state = GameState.GAME;
-				break;
-		}
-
-        State = state;
-	}
-
-
 
     IEnumerator SwitchScene(int scene){
 		State = GameState.PAUSE;
-		yield return _fader.FadeIn(1f);
+		yield return _fader.FadeIn(1.5f);
+		State = GameState.GAME;
 		yield return SceneManager.LoadSceneAsync(scene);
-        State = GameState.PAUSE;
+		_titleScreen.SetActive(false);
 		_playerStart = GameObject.Find("PLAYER_START");
 		_playerController.transform.position = _playerStart.transform.position;
-		yield return _fader.FadeOut(1f);
+		_playerController.canMove = true;
+		yield return _fader.FadeOut(1.5f);
     }
 
 	public void SwitchLevel(int levelNumber){
 		StartCoroutine(SwitchScene(levelNumber));
 	}
 
+	public void LoadLevelMusic(string music, float fadetime, float volume){
+		_audioController.StopAll();
+		_audioController.FadeIn(music, fadetime, volume);
+	}
+
+	public void StartCredits(){
+		State = GameState.CREDITS;
+		_playerController.canMove = false;
+		_creditsScreen.SetActive(true);
+	}
+
 
 	IEnumerator WaitForFadeOut(float fadeTime, float waitTime){
 		yield return new WaitForSeconds(waitTime);
 		StartCoroutine(FadeOut(fadeTime));
+		State = GameState.TITLE;
 	}
 
 	IEnumerator WaitForFadeIn(float fadeTime, float waitTime){
@@ -175,26 +153,28 @@ public class GameController : MonoBehaviour
 
 
 
-	public void OnBattleEnter(){
+	public void OnBattleEnter(bool boss){
 		_audioController.FadeOut("NORMAL MUSIC", 1f, 0f);
+		_audioController.FadeOut("GLITCH MUSIC", 1f, 0f);
 		_playerController.canMove = false;
 		State = GameState.BATTLE;
-		_audioController.FadeIn("BATTLE MUSIC", 5f, 0.2f);
+		if(!boss)
+			_audioController.FadeIn("BATTLE MUSIC", 5f, 0.10f);
 	}
 
 	public void OnPlayerDeath(){
-		_audioController.FadeOut("BATTLE MUSIC", 1f, 0f);
-		_audioController.FadeOut("NORMAL MUSIC", 20f, 0.2f);
+		_audioController.StopAll();
+		StartCoroutine(FadeOut(1.5f));
+		_audioController.Play("DEATH MUSIC");
 		_playerController.canMove = false;
 		State = GameState.DEAD;
 		_gameOver.SetActive(true);
+		
 	}
 
-	public void OnBattleExit(){
+	public void OnBattleExit(int loadLevel){
 		_audioController.FadeOut("BATTLE MUSIC", 1f, 0f);
-		_playerController.canMove = true;
-		State = GameState.GAME;
-		_audioController.FadeIn("NORMAL MUSIC", 20f, 0.2f);
+		SwitchLevel(loadLevel);
 	}
 
 	public void OnDialogueEnter(){
@@ -207,6 +187,23 @@ public class GameController : MonoBehaviour
 		State = GameState.GAME;
 	}
 
+	public void OnWarpEnter(GameObject warp){
+		StartCoroutine(StartWarp(warp));
+	}
+
+	IEnumerator StartWarp(GameObject warp){
+		_playerController.canMove = false;
+		StartCoroutine(_fader.FadeIn(1f));
+		yield return new WaitForSeconds(1f);
+		StartCoroutine(_fader.FadeOut(1f));
+		//yield return new WaitForSeconds(1f);
+		_playerController.transform.position = warp.transform.position;
+		_playerController.canMove = true;
+	}
+
+	public void OnWarpExit(){
+
+	}
 
 }
 

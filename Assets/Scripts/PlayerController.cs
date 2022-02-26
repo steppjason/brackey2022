@@ -67,8 +67,8 @@ public class PlayerController : MonoBehaviour
 		this.Level = 1;
 		this.MaxHP = 25 * this.Level;
 		this.HP = this.MaxHP;
-		this.Attack = 100;
-		this.Defense = 250;
+		this.Attack = 1;
+		this.Defense = 1;
 		this.Speed = 10;
 	
 	}
@@ -80,26 +80,42 @@ public class PlayerController : MonoBehaviour
     {
 		_camera.transform.position = new Vector3(transform.position.x, transform.position.y, -10);
 
-		if(action && canMove && (Input.GetKeyDown(KeyCode.RightControl) || Input.GetKeyDown(KeyCode.LeftControl))){
-			
-			if(_collider.GetComponent<DialogueTrigger>()){				
-				_collider.GetComponent<DialogueTrigger>().TriggerDialogue();
-			}
+		if(_collider != null){
+			if(action && canMove && (Input.GetKeyDown(KeyCode.RightControl) || Input.GetKeyDown(KeyCode.LeftControl))){
 				
-			if(_collider.GetComponent<BattleTrigger>()){
-				_collider.GetComponent<BattleTrigger>().TriggerBattle();
-			}
+				if(_collider.GetComponent<DialogueTrigger>())			
+					_collider.GetComponent<DialogueTrigger>().TriggerDialogue();
 				
+			} else if(action && canMove){
+				if(_collider.GetComponent<WarpTrigger>())
+					_collider.GetComponent<WarpTrigger>().TriggerWarp();
+
+				if(_collider.GetComponent<BattleTrigger>())
+					_collider.GetComponent<BattleTrigger>().TriggerBattle();
+			}
 		}
+		
 
 		if (canMove){
 			_input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
 			_rb.velocity = _input * _walkSpeed;
 			HandleSpriteFlip();
 			SetSprite();
+		} else if (!canMove){
+			_rb.velocity = new Vector2(0,0);
 		}
+
+
 		
 
+	}
+
+	public void SetStats(int level, int attack, int defense){
+		this.Level = level;
+		this.Attack = attack;
+		this.Defense = defense;
+		this.MaxHP = this.Level * 25;
+		this.HP = this.MaxHP;
 	}
 
 	void SetSprite(){

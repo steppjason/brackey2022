@@ -6,9 +6,11 @@ using UnityEngine;
 public class Enemy
 {
 	[SerializeField] EnemySO enemybase;
-	[SerializeField] int level;
+	
+	[SerializeField] public int loadLevel;
 
 	int _currentHP;
+	int level;
 
 	public EnemySO EnemyBase {
 		get { return enemybase; }
@@ -44,8 +46,9 @@ public class Enemy
 
 
 
-	public void Init(){
+	public void Init(int lvl){
 		_currentHP = MaxHP;
+		level = lvl;
 	}
 
 	public void TakeDamage(int damage){
