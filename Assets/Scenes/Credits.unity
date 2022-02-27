@@ -180,7 +180,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _musicTrack: NORMAL MUSIC
-  _fadeTime: 10
+  _fadeTime: 5
   _volume: 0.1
   level: 0
   attack: 0

@@ -19,8 +19,8 @@ MonoBehaviour:
   healText: DREAMLESS feasts on the souls of children.
   deathText: DREAMLESS faded into nothing.
   enemySprite: {fileID: 21300000, guid: a55b480aa9b256a418a7ec140d650fec, type: 3}
-  maxHP: 25000
-  attack: 1000
-  defense: 100
+  maxHP: 12000
+  attack: 1500
+  defense: 0
   speed: 1
   moves: 000000000000000000000000

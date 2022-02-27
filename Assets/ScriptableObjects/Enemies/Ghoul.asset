@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7aa58aafda8d2eb4793e599706fcef26, type: 3}
-  m_Name: Crab
+  m_Name: Ghoul
   m_EditorClassIdentifier: 
   enemyName: 
   description: 
-  appearText: A GIANT CRAB appears!
-  attackText: GIANT CRAB swipes the player!
-  healText: GIANT CRAB is nourished!
-  deathText: GIANT CRAB was slain!
-  enemySprite: {fileID: 21300000, guid: 444bd6771e83c974e916113a142cca2f, type: 3}
-  maxHP: 250
-  attack: 20
+  appearText: GHOUL smells your flesh!
+  attackText: GHOUL bites the player
+  healText: GHOUL eats dead flesh
+  deathText: GHOUL has been destroyed!
+  enemySprite: {fileID: 21300000, guid: a3108dea61900654abf00f784c664781, type: 3}
+  maxHP: 1200
+  attack: 95
   defense: 0
   speed: 1
   moves: 

@@ -81,7 +81,10 @@ public class PlayerController : MonoBehaviour
 		_camera.transform.position = new Vector3(transform.position.x, transform.position.y, -10);
 
 		if(_collider != null){
-			if(action && canMove && (Input.GetKeyDown(KeyCode.RightControl) || Input.GetKeyDown(KeyCode.LeftControl))){
+			if(action && canMove && (Input.GetKeyDown(KeyCode.RightControl) 
+									|| Input.GetKeyDown(KeyCode.LeftControl) 
+									|| Input.GetKeyDown(KeyCode.LeftApple) 
+									|| Input.GetKeyDown(KeyCode.RightApple))){
 				
 				if(_collider.GetComponent<DialogueTrigger>())			
 					_collider.GetComponent<DialogueTrigger>().TriggerDialogue();
@@ -114,7 +117,9 @@ public class PlayerController : MonoBehaviour
 		this.Level = level;
 		this.Attack = attack;
 		this.Defense = defense;
-		this.MaxHP = this.Level * 25;
+		this.MaxHP = (this.Level * 25) + 100;
+		if(this.MaxHP > 9999)
+			this.MaxHP = 9999;
 		this.HP = this.MaxHP;
 	}
 

@@ -908,14 +908,14 @@ RectTransform:
   m_GameObject: {fileID: 285229623}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.0095313, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 2036628509}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -13.79002}
+  m_AnchoredPosition: {x: -6.5, y: -13.79002}
   m_SizeDelta: {x: 138.25, y: 43.66}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &285229625
@@ -1389,7 +1389,7 @@ RectTransform:
   m_GameObject: {fileID: 663297035}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3.4924, y: 3.4924, z: 3.4924}
+  m_LocalScale: {x: 2.79392, y: 2.79392, z: 2.79392}
   m_Children:
   - {fileID: 1682814544}
   m_Father: {fileID: 31036940}
@@ -2758,7 +2758,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &911126526
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3340,7 +3340,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: -9.595215, y: 0, z: -7.292366, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -4502,6 +4502,9 @@ MonoBehaviour:
   DebugBattleState: {fileID: 1309452775}
   DebugAction: {fileID: 243484823}
   DebugEnemyHP: {fileID: 0}
+  logA: 0
+  logB: 0
+  logC: 0
   _fader: {fileID: 1572804558}
 --- !u!1 &1680131341
 GameObject:
@@ -5463,7 +5466,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _encounter:
     enemybase: {fileID: 11400000, guid: c7978ff5a0835f54f89494a9e2c5d11c, type: 2}
-    level: 3
     loadLevel: 0
   isDead: 0
   isFinalBoss: 0
@@ -5784,7 +5786,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _encounter:
     enemybase: {fileID: 11400000, guid: e20200e6c2fea1a4b997d90119785cc2, type: 2}
-    level: 3
     loadLevel: 0
   isDead: 0
   isFinalBoss: 0

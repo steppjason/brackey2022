@@ -32,6 +32,10 @@ public class AudioController : MonoBehaviour
 	}
 
 	public void StopAll(){
+		// foreach(AudioSound music in audioClips){
+		// 	StartCoroutine(DoFadeOut(music.source, 2f, 0f));
+		// }
+
 		foreach(AudioSound music in audioClips){
 			music.source.Stop();
 		}

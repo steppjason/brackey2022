@@ -1,3 +1,4 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -30,6 +31,11 @@ public class GameController : MonoBehaviour
 	[SerializeField] public TMP_Text DebugBattleState;
 	[SerializeField] public TMP_Text DebugAction;
 	[SerializeField] public TMP_Text DebugEnemyHP;
+
+	
+	[SerializeField] public float logA;
+	[SerializeField] public float logB;
+	[SerializeField] public float logC;
 
 	public GameState State {get;set;}
 
@@ -88,8 +94,9 @@ public class GameController : MonoBehaviour
 			
 		}
 
-		DebugUI();
-    }
+		//DebugUI();
+
+	}
 
   
 	private void DebugUI(){
@@ -174,6 +181,7 @@ public class GameController : MonoBehaviour
 
 	public void OnBattleExit(int loadLevel){
 		_audioController.FadeOut("BATTLE MUSIC", 1f, 0f);
+		_audioController.FadeOut("CREEP MUSIC", 1f, 0f);
 		SwitchLevel(loadLevel);
 	}
 

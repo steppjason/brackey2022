@@ -91,7 +91,10 @@ public class BattleController : MonoBehaviour
 		}
 
 		if(_isGameOver){
-			if(_finishedBattleMessage && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
+			if(_finishedBattleMessage && (Input.GetKeyDown(KeyCode.RightControl) 
+									|| Input.GetKeyDown(KeyCode.LeftControl) 
+									|| Input.GetKeyDown(KeyCode.LeftApple) 
+									|| Input.GetKeyDown(KeyCode.RightApple))){
 				_audioController.Play("Menu Select");
 				animator.SetBool("isShowing", false);
 				StartCoroutine(WaitForBoxExit(0.5f));
@@ -179,7 +182,10 @@ public class BattleController : MonoBehaviour
 				}
 			}
 	
-			if(Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)){
+			if(Input.GetKeyDown(KeyCode.RightControl) 
+					|| Input.GetKeyDown(KeyCode.LeftControl) 
+					|| Input.GetKeyDown(KeyCode.LeftApple) 
+					|| Input.GetKeyDown(KeyCode.RightApple)){
 				_audioController.Play("Menu Select");
 				DoPlayerAction(_menuSelection);
 			}
@@ -187,8 +193,11 @@ public class BattleController : MonoBehaviour
 		}
 
 		if(State == BattleState.MESSAGE){
-			DebugUI();
-			if(!_isGameOver && _finishedBattleMessage && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
+			//DebugUI();
+			if(!_isGameOver && _finishedBattleMessage && (Input.GetKeyDown(KeyCode.RightControl) 
+									|| Input.GetKeyDown(KeyCode.LeftControl) 
+									|| Input.GetKeyDown(KeyCode.LeftApple) 
+									|| Input.GetKeyDown(KeyCode.RightApple))){
 				_audioController.Play("Menu Select");
 				animator.SetBool("isShowing", false);
 				StartCoroutine(WaitForBoxExit(0.5f));
@@ -210,7 +219,10 @@ public class BattleController : MonoBehaviour
 				StartCoroutine(SetTurn());
 				ResetNumberAnimations();
 
-			} else if(Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)){
+			} else if(Input.GetKeyDown(KeyCode.RightControl) 
+									|| Input.GetKeyDown(KeyCode.LeftControl) 
+									|| Input.GetKeyDown(KeyCode.LeftApple) 
+									|| Input.GetKeyDown(KeyCode.RightApple)){
 				_textSpeed = 0.0001f;
 			}
 
@@ -294,7 +306,7 @@ public class BattleController : MonoBehaviour
 	IEnumerator ActionWake(){
 
 		bool crit = false;
-		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 5);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 10);
 		string message = "Player tries to wake.";
 
 		if(UnityEngine.Random.Range(1,100) < 20){
@@ -316,10 +328,10 @@ public class BattleController : MonoBehaviour
 
 	IEnumerator ActionPsychosis(){
 		bool crit = false;
-		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 5);
+		int damage = _playerController.Attack + UnityEngine.Random.Range(1, 25);
 		string message = "Player enters a state of psychosis.";
 		int damageToPlayer = damage;
-		if(UnityEngine.Random.Range(1,100) < 50){
+		if(UnityEngine.Random.Range(1,100) < 80){
 			crit = true;
 			damage = damage * 2;
 			message = "Player experiences euphoria!";
@@ -341,15 +353,17 @@ public class BattleController : MonoBehaviour
 	}
 
 	IEnumerator ActionSleep(){
-		_playerController.Defense += 1;
-		Debug.Log(_playerController.Defense);
+		_playerController.Defense += Mathf.CeilToInt(Mathf.Log(_playerController.Level, 2) * 0.25f);
+		if( _playerController.Defense > _playerController.MaxHP / 10)
+			_playerController.Defense = _playerController.MaxHP / 10;
+
 		StartCoroutine(ShowBattleMessage("Player feels asleep. Defense went up."));
 
 		yield return StartCoroutine(DisplayDamage(-1, false));
 	}
 
 	IEnumerator ActionDream(){
-		int heal = _playerController.Level * 2 ;
+		int heal = (_playerController.Level * 10) + UnityEngine.Random.Range(5,25);
 		_playerController.HP += heal;
 		if(_playerController.HP > _playerController.MaxHP) _playerController.HP = _playerController.MaxHP;
 
@@ -371,10 +385,10 @@ public class BattleController : MonoBehaviour
 	IEnumerator EnemyAttack(){ 
 
 		bool crit = false;
-		int damage = battleEnemy.Enemy.Attack + UnityEngine.Random.Range(1, 2);
+		int damage = battleEnemy.Enemy.Attack + UnityEngine.Random.Range(-10, 5);
 		string message = battleEnemy.Enemy.EnemySO.AttackText;
 
-		if(UnityEngine.Random.Range(1,100) < 20){
+		if(UnityEngine.Random.Range(1,100) < 15){
 			crit = true;
 			damage = damage * 2;
 		}

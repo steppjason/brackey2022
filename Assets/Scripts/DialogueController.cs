@@ -44,10 +44,16 @@ public class DialogueController : MonoBehaviour
 	private void Update() {
 
 		if(_isActive){
-			if(nextLine && (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))){
+			if(nextLine && (Input.GetKeyDown(KeyCode.RightControl) 
+									|| Input.GetKeyDown(KeyCode.LeftControl) 
+									|| Input.GetKeyDown(KeyCode.LeftApple) 
+									|| Input.GetKeyDown(KeyCode.RightApple))){
 				_audioController.Play("Menu Select");
 				DisplayNextSentence();
-			} else if (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)){
+			} else if (Input.GetKeyDown(KeyCode.RightControl) 
+									|| Input.GetKeyDown(KeyCode.LeftControl) 
+									|| Input.GetKeyDown(KeyCode.LeftApple) 
+									|| Input.GetKeyDown(KeyCode.RightApple)){
 				_textSpeed = 0.0001f;
 			}
 		}
